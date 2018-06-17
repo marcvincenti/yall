@@ -1,0 +1,6 @@
+# ignore builded files
+/obj
+yall
+
+# ignore System files
+.DS_Store
