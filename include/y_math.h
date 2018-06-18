@@ -10,9 +10,16 @@
 #define y_math_h
 
 #include <math.h>
+#include "evaluation.h"
 
-long y_math_max(long x, long y);
-long y_math_min(long x, long y);
-long y_math_pow(long x, long y);
+lval y_math_add(lval, lval);
+lval y_math_sub(lval, lval);
+lval y_math_mul(lval, lval);
+lval y_math_div(lval, lval);
+lval y_math_mod(lval, lval);
+lval y_math_pow(lval, lval);
+
+lval y_math_max(lval, lval);
+lval y_math_min(lval, lval);
 
 #endif
