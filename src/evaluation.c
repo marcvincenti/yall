@@ -70,8 +70,19 @@ lval eval_op(char* op, lval x, lval y) {
   if (strcmp(op, "/") == 0) { return y_math_div(x, y); }
   if (strcmp(op, "%") == 0) { return y_math_mod(x, y); }
   if (strcmp(op, "^") == 0) { return y_math_pow(x, y); }
-  if (strcmp(op, "max") == 0) { return y_math_max(x, y); }
-  if (strcmp(op, "min") == 0) { return y_math_min(x, y); }
+
+  return lval_err(LERR_BAD_OP);
+}
+
+/* Use operator string to see which function to perform */
+lval eval_func(char* func, lval x, lval y) {
+
+  /* If either value is an error return it */
+  if (x.type == LVAL_ERR) { return x; }
+  if (y.type == LVAL_ERR) { return y; }
+
+  if (strcmp(func, "max") == 0) { return y_math_max(x, y); }
+  if (strcmp(func, "min") == 0) { return y_math_min(x, y); }
 
   return lval_err(LERR_BAD_OP);
 }
@@ -94,18 +105,34 @@ lval eval(mpc_ast_t* t) {
     else { return lval_err(LERR_BAD_NUM); }
   }
 
-  /* The operator is always second child. */
-  char* op = t->children[1]->contents;
-
-  /* We store the third child in `x` */
-  lval x = eval(t->children[2]);
-
-  /* Iterate the remaining children and combining. */
-  int i = 3;
-  while (strstr(t->children[i]->tag, "expr")) {
-    x = eval_op(op, x, eval(t->children[i]));
-    i++;
+  if (t->children_num > 2 && strstr(t->children[1]->tag, "operator")) {
+    /* The operator is always second child. */
+    char* op = t->children[1]->contents;
+    /* We store the third child in `x` */
+    lval x = eval(t->children[2]);
+    /* Iterate the remaining children and combining. */
+    int i = 3;
+    while (strstr(t->children[i]->tag, "expr")) {
+      x = eval_op(op, x, eval(t->children[i]));
+      i++;
+    }
+    return x;
   }
 
-  return x;
+  if (t->children_num > 2 && strstr(t->children[1]->tag, "function")) {
+    fprintf(stdout, "%i\n", t->children_num);
+    /* The operator is always second child. */
+    char* func = t->children[1]->contents;
+    /* We store the third child in `x` */
+    lval x = eval(t->children[2]);
+    /* Iterate the remaining children and combining. */
+    int i = 3;
+    while (strstr(t->children[i]->tag, "expr")) {
+      x = eval_func(func, x, eval(t->children[i]));
+      i++;
+    }
+    return x;
+  }
+
+  return lval_err(LERR_BAD_OP);
 }

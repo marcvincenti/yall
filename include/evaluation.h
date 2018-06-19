@@ -38,6 +38,7 @@ void lval_print(lval);
 void lval_println(lval);
 
 lval eval_op(char*, lval, lval);
+lval eval_func(char*, lval, lval);
 
 lval eval(mpc_ast_t*);
 
