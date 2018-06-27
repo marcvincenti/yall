@@ -1,6 +1,6 @@
 EXEC = yall
 CFLAGS   = -std=c99 -Wall -pedantic
-LDFLAGS  = -std=c99 -Wall -pedantic
+LDFLAGS  = -std=c99 -Wall -pedantic -ledit
 
 SRCD = src
 INCD = include

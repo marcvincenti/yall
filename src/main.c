@@ -10,7 +10,25 @@
 #include "evaluation.h"
 #include "mpc.h"
 
-#define BUFFERSIZE 2048
+#ifdef _WIN32 //Windows
+#include <string.h>
+static char buffer[2048];
+char* readline(char* prompt) {
+  fputs(prompt, stdout);
+  fgets(buffer, 2048, stdin);
+  char* cpy = malloc(strlen(buffer)+1);
+  strcpy(cpy, buffer);
+  cpy[strlen(cpy)-1] = '\0';
+  return cpy;
+}
+void add_history(char* unused) {}
+#elif __APPLE__ //Mac OS
+#include <editline/readline.h>
+#include "TargetConditionals.h"
+#elif __linux // linux
+#include <editline/readline.h>
+#include <editline/history.h>
+#endif
 
 int main(int argc, char** argv) {
 
@@ -34,11 +52,10 @@ int main(int argc, char** argv) {
     Integer, Decimal, Symbol, Sexpr, Expr, Yall);
 
    while(1) {
-     char input[BUFFERSIZE];
-     mpc_result_t r;
+     char* input = readline("> ");
+     add_history(input);
 
-     fputs("> ", stdout);
-     fgets(input, BUFFERSIZE , stdin);
+     mpc_result_t r;
 
      if (mpc_parse("<stdin>", input, Yall, &r)) {
        /* Attempt to parse the user input */
