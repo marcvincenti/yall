@@ -12,14 +12,14 @@
 #include <math.h>
 #include "evaluation.h"
 
-lval y_math_add(lval, lval);
-lval y_math_sub(lval, lval);
-lval y_math_mul(lval, lval);
-lval y_math_div(lval, lval);
-lval y_math_mod(lval, lval);
-lval y_math_pow(lval, lval);
+void y_math_add(lval*, lval*);
+void y_math_sub(lval*, lval*);
+void y_math_mul(lval*, lval*);
+void y_math_div(lval*, lval*);
+void y_math_mod(lval*, lval*);
+void y_math_pow(lval*, lval*);
 
-lval y_math_max(lval, lval);
-lval y_math_min(lval, lval);
+void y_math_max(lval*, lval*);
+void y_math_min(lval*, lval*);
 
 #endif

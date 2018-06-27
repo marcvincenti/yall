@@ -15,24 +15,23 @@
 int main(int argc, char** argv) {
 
   /* Create Some Parsers */
- mpc_parser_t* Number   = mpc_new("number");
- mpc_parser_t* Decimal  = mpc_new("decimal");
- mpc_parser_t* Operator = mpc_new("operator");
- mpc_parser_t* Function = mpc_new("function");
- mpc_parser_t* Expr     = mpc_new("expr");
- mpc_parser_t* Yall     = mpc_new("yall");
+  mpc_parser_t* Integer = mpc_new("integer");
+  mpc_parser_t* Decimal = mpc_new("decimal");
+  mpc_parser_t* Symbol  = mpc_new("symbol");
+  mpc_parser_t* Sexpr   = mpc_new("sexpr");
+  mpc_parser_t* Expr    = mpc_new("expr");
+  mpc_parser_t* Yall    = mpc_new("yall");
 
- /* Define them with the following Language */
- mpca_lang(MPCA_LANG_DEFAULT,
-   "                                                                    \
-     number   : /[+-]?[0-9]+/ ;                                         \
-     decimal  : /[+-]?(([0-9]+\\.[0-9]*)|(\\.[0-9]+))/ ;                \
-     operator : '+' | '-' | '*' | '/' | '%' | '^' ;                     \
-     function : \"min\" | \"max\" | <operator> ;                        \
-     expr     : <number> | <decimal> | '(' <function> <expr>+ ')' ;     \
-     yall     : /^/ <function> <expr>+ /$/ ;                            \
-   ",
-   Number, Decimal, Operator, Function, Expr, Yall);
+  mpca_lang(MPCA_LANG_DEFAULT,
+    "                                                       \
+      integer : /[+-]?[0-9]+/ ;                             \
+      decimal : /[+-]?(([0-9]+\\.[0-9]*)|(\\.[0-9]+))/ ;    \
+      symbol  : '+' | '-' | '*' | '/' | '%' | '^' ;         \
+      sexpr   : '(' <expr>* ')' ;                           \
+      expr    : <integer> | <decimal> | <symbol> | <sexpr> ;\
+      yall    : /^/ <expr>* /$/ ;                           \
+    ",
+    Integer, Decimal, Symbol, Sexpr, Expr, Yall);
 
    while(1) {
      char input[BUFFERSIZE];
@@ -43,8 +42,9 @@ int main(int argc, char** argv) {
 
      if (mpc_parse("<stdin>", input, Yall, &r)) {
        /* Attempt to parse the user input */
-       lval result = eval(r.output);
-       lval_println(result);
+       lval* x = lval_eval(lval_read(r.output));
+       lval_println(x);
+       lval_del(x);
        mpc_ast_delete(r.output);
      } else {
        /* Otherwise print and delete the Error */
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
    }
 
   /* Undefine and delete our parsers */
-  mpc_cleanup(6, Number, Decimal, Operator, Function, Expr, Yall);
+  mpc_cleanup(6, Integer, Decimal, Symbol, Sexpr, Expr, Yall);
 
   return 0;
 }

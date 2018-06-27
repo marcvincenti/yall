@@ -11,35 +11,44 @@
 
 #include "mpc.h"
 
-union u_lval_value {
-   long l;
-   double d;
- };
+/* Add SYM and SEXPR as possible lval types */
+enum { LVAL_ERR, LVAL_NUM_INT, LVAL_NUM_DEC, LVAL_SYM, LVAL_SEXPR };
 
-/* Create Enumeration of Possible lval Types */
-enum e_lval_type { LVAL_NUM, LVAL_DEC, LVAL_ERR };
-
-/* Create Enumeration of Possible Error Types */
-enum e_lval_error { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM };
-
-/* Declare New lval Struct */
-typedef struct {
-  union u_lval_value val;
-  enum e_lval_type type;
-  enum e_lval_error err;
+typedef struct lval {
+  int type;
+  union {
+    /* Numbers types */
+    long num_int;
+    double num_dec;
+    /* Error and Symbol types have some string data */
+    char* err;
+    char* sym;
+  } data;
+  /* Count and Pointer to a list of "lval*"; */
+  int count;
+  struct lval** cell;
 } lval;
 
 
-lval lval_num(long);
-lval lval_dec(double);
-lval lval_err(enum e_lval_error);
+lval* lval_num_int(long);
+lval* lval_num_dec(double);
+lval* lval_err(char*);
+lval* lval_sym(char*);
+lval* lval_sexpr();
 
-void lval_print(lval);
-void lval_println(lval);
+void lval_del(lval*);
+lval* lval_add(lval*, lval*);
+lval* lval_pop(lval*, int);
+lval* lval_take(lval*, int);
 
-lval eval_op(char*, lval, lval);
-lval eval_func(char*, lval, lval);
+void lval_print(lval*);
+void lval_expr_print(lval*, char, char);
+void lval_println(lval*);
 
-lval eval(mpc_ast_t*);
+lval* builtin_op(lval*, char*);
+lval* lval_eval(lval*);
+lval* lval_eval_sexpr(lval*);
+lval* lval_read_num(mpc_ast_t*) ;
+lval* lval_read(mpc_ast_t*);
 
 #endif
