@@ -12,7 +12,7 @@
 #include "mpc.h"
 
 /* Add SYM and SEXPR as possible lval types */
-enum { LVAL_ERR, LVAL_NUM_INT, LVAL_NUM_DEC, LVAL_SYM, LVAL_SEXPR };
+enum { LVAL_ERR, LVAL_NUM_INT, LVAL_NUM_DEC, LVAL_SYM, LVAL_SEXPR, LVAL_QEXPR };
 
 typedef struct lval {
   int type;
@@ -35,6 +35,7 @@ lval* lval_num_dec(double);
 lval* lval_err(char*);
 lval* lval_sym(char*);
 lval* lval_sexpr();
+lval* lval_qexpr();
 
 void lval_del(lval*);
 lval* lval_add(lval*, lval*);
@@ -42,7 +43,7 @@ lval* lval_pop(lval*, int);
 lval* lval_take(lval*, int);
 
 void lval_print(lval*);
-void lval_expr_print(lval*, char, char);
+void lval_expr_print(lval*, char*, char*);
 void lval_println(lval*);
 
 lval* builtin_op(lval*, char*);

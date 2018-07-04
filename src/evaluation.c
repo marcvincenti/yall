@@ -45,6 +45,15 @@ lval* lval_sexpr() {
   return v;
 }
 
+/* A pointer to a new empty Qexpr lval */
+lval* lval_qexpr() {
+  lval* v = malloc(sizeof(lval));
+  v->type = LVAL_QEXPR;
+  v->count = 0;
+  v->cell = NULL;
+  return v;
+}
+
 void lval_del(lval* v) {
 
   switch (v->type) {
@@ -56,7 +65,8 @@ void lval_del(lval* v) {
     case LVAL_ERR: free(v->data.err); break;
     case LVAL_SYM: free(v->data.sym); break;
 
-    /* If Sexpr then delete all elements inside */
+    /* If [S/Q]-expr then delete all elements inside */
+    case LVAL_QEXPR:
     case LVAL_SEXPR:
       for (int i = 0; i < v->count; i++) {
         lval_del(v->cell[i]);
@@ -101,8 +111,8 @@ lval* lval_take(lval* v, int i) {
 
 void lval_print(lval* v);
 
-void lval_expr_print(lval* v, char open, char close) {
-  putchar(open);
+void lval_expr_print(lval* v, char* open, char* close) {
+  printf("%s", open);
   for (int i = 0; i < v->count; i++) {
 
     /* Print Value contained within */
@@ -113,7 +123,7 @@ void lval_expr_print(lval* v, char open, char close) {
       putchar(' ');
     }
   }
-  putchar(close);
+  printf("%s", close);
 }
 
 void lval_print(lval* v) {
@@ -122,7 +132,8 @@ void lval_print(lval* v) {
     case LVAL_NUM_DEC:  printf("%f", v->data.num_dec); break;
     case LVAL_ERR:      printf("Error: %s", v->data.err); break;
     case LVAL_SYM:      printf("%s", v->data.sym); break;
-    case LVAL_SEXPR:    lval_expr_print(v, '(', ')'); break;
+    case LVAL_QEXPR:    lval_expr_print(v, "\'(", ")"); break;
+    case LVAL_SEXPR:    lval_expr_print(v, "(", ")"); break;
   }
 }
 
@@ -173,8 +184,6 @@ lval* builtin_op(lval* a, char* op) {
   lval_del(a);
   return x;
 }
-
-lval* lval_eval(lval* v);
 
 lval* lval_eval_sexpr(lval* v) {
 
@@ -245,12 +254,14 @@ lval* lval_read(mpc_ast_t* t) {
   lval* x = NULL;
   if (strcmp(t->tag, ">") == 0) { x = lval_sexpr(); }
   if (strstr(t->tag, "sexpr"))  { x = lval_sexpr(); }
+  if (strstr(t->tag, "qexpr"))  { x = lval_qexpr(); }
 
   /* Fill this list with any valid expression contained within */
   for (int i = 0; i < t->children_num; i++) {
     if (strcmp(t->children[i]->contents, "(") == 0) { continue; }
     if (strcmp(t->children[i]->contents, ")") == 0) { continue; }
-    if (strcmp(t->children[i]->tag,  "regex") == 0) { continue; }
+    if (strcmp(t->children[i]->contents, "'(") == 0) { continue; }
+    if (strcmp(t->children[i]->tag, "regex") == 0) { continue; }
     x = lval_add(x, lval_read(t->children[i]));
   }
 

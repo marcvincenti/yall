@@ -37,19 +37,21 @@ int main(int argc, char** argv) {
   mpc_parser_t* Decimal = mpc_new("decimal");
   mpc_parser_t* Symbol  = mpc_new("symbol");
   mpc_parser_t* Sexpr   = mpc_new("sexpr");
+  mpc_parser_t* Qexpr   = mpc_new("qexpr");
   mpc_parser_t* Expr    = mpc_new("expr");
   mpc_parser_t* Yall    = mpc_new("yall");
 
   mpca_lang(MPCA_LANG_DEFAULT,
-    "                                                       \
-      integer : /[+-]?[0-9]+/ ;                             \
-      decimal : /[+-]?(([0-9]+\\.[0-9]*)|(\\.[0-9]+))/ ;    \
-      symbol  : '+' | '-' | '*' | '/' | '%' | '^' ;         \
-      sexpr   : '(' <expr>* ')' ;                           \
-      expr    : <integer> | <decimal> | <symbol> | <sexpr> ;\
-      yall    : /^/ <expr>* /$/ ;                           \
+    "                                                                 \
+      integer : /[+-]?[0-9]+/ ;                                       \
+      decimal : /[+-]?(([0-9]+\\.[0-9]*)|(\\.[0-9]+))/ ;              \
+      symbol  : '+' | '-' | '*' | '/' | '%' | '^' ;                   \
+      sexpr   : '(' <expr>* ')' ;                                     \
+      qexpr   : \"'(\" <expr>* ')' ;                                  \
+      expr    : <integer> | <decimal> | <symbol> | <sexpr> | <qexpr> ;\
+      yall    : /^/ <expr>* /$/ ;                                     \
     ",
-    Integer, Decimal, Symbol, Sexpr, Expr, Yall);
+    Integer, Decimal, Symbol, Sexpr, Qexpr, Expr, Yall);
 
    while(1) {
      char* input = readline("> ");
@@ -72,7 +74,7 @@ int main(int argc, char** argv) {
    }
 
   /* Undefine and delete our parsers */
-  mpc_cleanup(6, Integer, Decimal, Symbol, Sexpr, Expr, Yall);
+  mpc_cleanup(7, Integer, Decimal, Symbol, Sexpr, Qexpr, Expr, Yall);
 
   return 0;
 }
