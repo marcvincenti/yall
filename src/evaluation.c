@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "builtin.h"
 #include "evaluation.h"
 #include "y_math.h"
 
@@ -87,6 +88,16 @@ lval* lval_add(lval* v, lval* x) {
   return v;
 }
 
+lval* lval_join(lval* x, lval* y) {
+  /* For each cell in 'y' add it to 'x' */
+  while (y->count) {
+    x = lval_add(x, lval_pop(y, 0));
+  }
+  /* Delete the empty 'y' and return 'x' */
+  lval_del(y);
+  return x;
+}
+
 lval* lval_pop(lval* v, int i) {
   /* Find the item at "i" */
   lval* x = v->cell[i];
@@ -138,6 +149,18 @@ void lval_print(lval* v) {
 }
 
 void lval_println(lval* v) { lval_print(v); putchar('\n'); }
+
+lval* builtin(lval* a, char* func) {
+  if (strcmp("list", func) == 0) { return builtin_list(a); }
+  if (strcmp("first", func) == 0) { return builtin_first(a); }
+  if (strcmp("rest", func) == 0) { return builtin_rest(a); }
+  if (strcmp("len", func) == 0) { return builtin_len(a); }
+  if (strcmp("join", func) == 0) { return builtin_join(a); }
+  if (strcmp("eval", func) == 0) { return builtin_eval(a); }
+  if (strstr("+-/*%^", func)) { return builtin_op(a, func); }
+  lval_del(a);
+  return lval_err("Unknown Function!");
+}
 
 lval* builtin_op(lval* a, char* op) {
 
@@ -211,7 +234,7 @@ lval* lval_eval_sexpr(lval* v) {
   }
 
   /* Call builtin with operator */
-  lval* result = builtin_op(v, f->data.sym);
+  lval* result = builtin(v, f->data.sym);
   lval_del(f);
   return result;
 }

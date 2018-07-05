@@ -42,14 +42,17 @@ int main(int argc, char** argv) {
   mpc_parser_t* Yall    = mpc_new("yall");
 
   mpca_lang(MPCA_LANG_DEFAULT,
-    "                                                                 \
-      integer : /[+-]?[0-9]+/ ;                                       \
-      decimal : /[+-]?(([0-9]+\\.[0-9]*)|(\\.[0-9]+))/ ;              \
-      symbol  : '+' | '-' | '*' | '/' | '%' | '^' ;                   \
-      sexpr   : '(' <expr>* ')' ;                                     \
-      qexpr   : \"'(\" <expr>* ')' ;                                  \
-      expr    : <integer> | <decimal> | <symbol> | <sexpr> | <qexpr> ;\
-      yall    : /^/ <expr>* /$/ ;                                     \
+    "                                                     \
+      integer : /[+-]?[0-9]+/ ;                           \
+      decimal : /[+-]?(([0-9]+\\.[0-9]*)|(\\.[0-9]+))/ ;  \
+      symbol  : \"list\" | \"first\" | \"rest\"           \
+              | \"join\" | \"eval\" | \"len\"             \
+              | '+' | '-' | '*' | '/' | '%' | '^' ;       \
+      sexpr   : '(' <expr>* ')' ;                         \
+      qexpr   : \"'(\" <expr>* ')' ;                      \
+      expr    : <integer> | <decimal> | <symbol>          \
+              | <sexpr> | <qexpr> ;                       \
+      yall    : /^/ <expr>* /$/ ;                         \
     ",
     Integer, Decimal, Symbol, Sexpr, Qexpr, Expr, Yall);
 

@@ -39,6 +39,7 @@ lval* lval_qexpr();
 
 void lval_del(lval*);
 lval* lval_add(lval*, lval*);
+lval* lval_join(lval*, lval*);
 lval* lval_pop(lval*, int);
 lval* lval_take(lval*, int);
 
@@ -46,6 +47,7 @@ void lval_print(lval*);
 void lval_expr_print(lval*, char*, char*);
 void lval_println(lval*);
 
+lval* builtin(lval* a, char*);
 lval* builtin_op(lval*, char*);
 lval* lval_eval(lval*);
 lval* lval_eval_sexpr(lval*);
