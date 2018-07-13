@@ -9,8 +9,7 @@
 #ifndef y_math_h
 #define y_math_h
 
-#include <math.h>
-#include "evaluation.h"
+#include "types.h"
 
 void y_math_add(lval*, lval*);
 void y_math_sub(lval*, lval*);

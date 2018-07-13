@@ -7,6 +7,7 @@
 */
 
 #include <stdio.h>
+#include "environment.h"
 #include "evaluation.h"
 #include "mpc.h"
 
@@ -45,9 +46,7 @@ int main(int argc, char** argv) {
     "                                                     \
       integer : /[+-]?[0-9]+/ ;                           \
       decimal : /[+-]?(([0-9]+\\.[0-9]*)|(\\.[0-9]+))/ ;  \
-      symbol  : \"list\" | \"first\" | \"rest\"           \
-              | \"join\" | \"eval\" | \"len\"             \
-              | '+' | '-' | '*' | '/' | '%' | '^' ;       \
+      symbol  : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ;        \
       sexpr   : '(' <expr>* ')' ;                         \
       qexpr   : \"'(\" <expr>* ')' ;                      \
       expr    : <integer> | <decimal> | <symbol>          \
@@ -56,25 +55,30 @@ int main(int argc, char** argv) {
     ",
     Integer, Decimal, Symbol, Sexpr, Qexpr, Expr, Yall);
 
-   while(1) {
-     char* input = readline("> ");
-     add_history(input);
 
-     mpc_result_t r;
+  lenv* e = lenv_new();
+  lenv_add_default_builtins(e);
 
-     if (mpc_parse("<stdin>", input, Yall, &r)) {
-       /* Attempt to parse the user input */
-       lval* x = lval_eval(lval_read(r.output));
-       lval_println(x);
-       lval_del(x);
-       mpc_ast_delete(r.output);
-     } else {
-       /* Otherwise print and delete the Error */
-       mpc_err_print(r.error);
-       mpc_err_delete(r.error);
-     }
+  while(1) {
+    char* input = readline("> ");
+    add_history(input);
 
-   }
+    mpc_result_t r;
+
+    if (mpc_parse("<stdin>", input, Yall, &r)) {
+      /* Attempt to parse the user input */
+      lval* x = lval_eval(e, lval_read(r.output));
+      lval_println(x);
+      lval_del(x);
+      mpc_ast_delete(r.output);
+    } else {
+      /* Otherwise print and delete the Error */
+      mpc_err_print(r.error);
+      mpc_err_delete(r.error);
+    }
+    free(input);
+  }
+  lenv_del(e);
 
   /* Undefine and delete our parsers */
   mpc_cleanup(7, Integer, Decimal, Symbol, Sexpr, Qexpr, Expr, Yall);

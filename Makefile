@@ -6,7 +6,7 @@ SRCD = src
 INCD = include
 OBJD = obj
 
-OBJFILES = y_math.o mpc.o evaluation.o builtin.o main.o
+OBJFILES = mpc.o builtin.o evaluation.o environment.o y_math.o main.o
 OBJS = $(OBJFILES:%.o=$(OBJD)/%.o)
 
 default: init $(EXEC)

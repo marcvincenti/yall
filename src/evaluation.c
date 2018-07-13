@@ -1,7 +1,6 @@
-#include <stdio.h>
-#include "builtin.h"
+#include "environment.h"
 #include "evaluation.h"
-#include "y_math.h"
+#include "mpc.h"
 
 /* Construct a pointer to a new integer lval */
 lval* lval_num_int(long x) {
@@ -16,6 +15,13 @@ lval* lval_num_dec(double x) {
   lval* v = malloc(sizeof(lval));
   v->type = LVAL_NUM_DEC;
   v->data.num_dec = x;
+  return v;
+}
+/* Construct a pointer to a function */
+lval* lval_fun(lbuiltin func) {
+  lval* v = malloc(sizeof(lval));
+  v->type = LVAL_FUN;
+  v->data.fun = func;
   return v;
 }
 
@@ -55,37 +61,46 @@ lval* lval_qexpr() {
   return v;
 }
 
-void lval_del(lval* v) {
-
-  switch (v->type) {
-    /* Do nothing special for number type */
-    case LVAL_NUM_INT: break;
-    case LVAL_NUM_DEC: break;
-
-    /* For Err or Sym free the string data */
-    case LVAL_ERR: free(v->data.err); break;
-    case LVAL_SYM: free(v->data.sym); break;
-
-    /* If [S/Q]-expr then delete all elements inside */
-    case LVAL_QEXPR:
-    case LVAL_SEXPR:
-      for (int i = 0; i < v->count; i++) {
-        lval_del(v->cell[i]);
-      }
-      /* Also free the memory allocated to contain the pointers */
-      free(v->cell);
-    break;
-  }
-
-  /* Free the memory allocated for the "lval" struct itself */
-  free(v);
-}
-
 lval* lval_add(lval* v, lval* x) {
   v->count++;
   v->cell = realloc(v->cell, sizeof(lval*) * v->count);
   v->cell[v->count-1] = x;
   return v;
+}
+
+lval* lval_copy(lval* v) {
+
+  lval* x = malloc(sizeof(lval));
+  x->type = v->type;
+
+  switch (v->type) {
+
+    /* Copy Functions and Numbers Directly */
+    case LVAL_NUM_INT: x->data.num_int = v->data.num_int; break;
+    case LVAL_NUM_DEC: x->data.num_dec = v->data.num_dec; break;
+    case LVAL_FUN: x->data.fun = v->data.fun; break;
+
+    /* Copy Strings using malloc and strcpy */
+    case LVAL_ERR:
+      x->data.err = malloc(strlen(v->data.err) + 1);
+      strcpy(x->data.err, v->data.err); break;
+
+    case LVAL_SYM:
+      x->data.sym = malloc(strlen(v->data.sym) + 1);
+      strcpy(x->data.sym, v->data.sym); break;
+
+    /* Copy Lists by copying each sub-expression */
+    case LVAL_SEXPR:
+    case LVAL_QEXPR:
+      x->count = v->count;
+      x->cell = malloc(sizeof(lval*) * x->count);
+      for (int i = 0; i < x->count; i++) {
+        x->cell[i] = lval_copy(v->cell[i]);
+      }
+    break;
+  }
+
+  return x;
 }
 
 lval* lval_join(lval* x, lval* y) {
@@ -120,6 +135,33 @@ lval* lval_take(lval* v, int i) {
   return x;
 }
 
+void lval_del(lval* v) {
+
+  switch (v->type) {
+    /* Do nothing special for number type and functions */
+    case LVAL_NUM_INT: break;
+    case LVAL_NUM_DEC: break;
+    case LVAL_FUN: break;
+
+    /* For Err or Sym free the string data */
+    case LVAL_ERR: free(v->data.err); break;
+    case LVAL_SYM: free(v->data.sym); break;
+
+    /* If [S/Q]-expr then delete all elements inside */
+    case LVAL_QEXPR:
+    case LVAL_SEXPR:
+      for (int i = 0; i < v->count; i++) {
+        lval_del(v->cell[i]);
+      }
+      /* Also free the memory allocated to contain the pointers */
+      free(v->cell);
+    break;
+  }
+
+  /* Free the memory allocated for the "lval" struct itself */
+  free(v);
+}
+
 void lval_print(lval* v);
 
 void lval_expr_print(lval* v, char* open, char* close) {
@@ -141,6 +183,7 @@ void lval_print(lval* v) {
   switch (v->type) {
     case LVAL_NUM_INT:  printf("%li", v->data.num_int); break;
     case LVAL_NUM_DEC:  printf("%f", v->data.num_dec); break;
+    case LVAL_FUN:      printf("<function>"); break;
     case LVAL_ERR:      printf("Error: %s", v->data.err); break;
     case LVAL_SYM:      printf("%s", v->data.sym); break;
     case LVAL_QEXPR:    lval_expr_print(v, "\'(", ")"); break;
@@ -150,98 +193,39 @@ void lval_print(lval* v) {
 
 void lval_println(lval* v) { lval_print(v); putchar('\n'); }
 
-lval* builtin(lval* a, char* func) {
-  if (strcmp("list", func) == 0) { return builtin_list(a); }
-  if (strcmp("first", func) == 0) { return builtin_first(a); }
-  if (strcmp("rest", func) == 0) { return builtin_rest(a); }
-  if (strcmp("len", func) == 0) { return builtin_len(a); }
-  if (strcmp("join", func) == 0) { return builtin_join(a); }
-  if (strcmp("eval", func) == 0) { return builtin_eval(a); }
-  if (strstr("+-/*%^", func)) { return builtin_op(a, func); }
-  lval_del(a);
-  return lval_err("Unknown Function!");
-}
-
-lval* builtin_op(lval* a, char* op) {
-
-  /* Ensure all arguments are numbers */
-  for (int i = 0; i < a->count; i++) {
-    if (a->cell[i]->type != LVAL_NUM_INT && a->cell[i]->type != LVAL_NUM_DEC) {
-      lval_del(a);
-      return lval_err("Cannot operate on non-number!");
-    }
-  }
-
-  /* Pop the first element */
-  lval* x = lval_pop(a, 0);
-
-  /* If no arguments and sub then perform unary negation */
-  if ((strcmp(op, "-") == 0) && a->count == 0) {
-    if (x->type == LVAL_NUM_INT) {
-      x->data.num_int = -x->data.num_int;
-    } else if (x->type == LVAL_NUM_DEC) {
-      x->data.num_dec = -x->data.num_dec;
-    }
-
-  }
-
-  /* While there are still elements remaining */
-  while (a->count > 0) {
-
-    /* Pop the next element */
-    lval* y = lval_pop(a, 0);
-
-    /* Perform operation */
-    if (strcmp(op, "+") == 0) { y_math_add(x, y); }
-    if (strcmp(op, "-") == 0) { y_math_sub(x, y); }
-    if (strcmp(op, "*") == 0) { y_math_mul(x, y); }
-    if (strcmp(op, "/") == 0) { y_math_div(x, y); }
-    if (strcmp(op, "%") == 0) { y_math_mod(x, y); }
-    if (strcmp(op, "^") == 0) { y_math_pow(x, y); }
-
-    /* Delete element now finished with */
-    lval_del(y);
-  }
-
-  /* Delete input expression and return result */
-  lval_del(a);
-  return x;
-}
-
-lval* lval_eval_sexpr(lval* v) {
-
+lval* lval_eval_sexpr(lenv* e, lval* v) {
   /* Evaluate Children */
   for (int i = 0; i < v->count; i++) {
-    v->cell[i] = lval_eval(v->cell[i]);
+    v->cell[i] = lval_eval(e, v->cell[i]);
   }
-
   /* Error Checking */
   for (int i = 0; i < v->count; i++) {
     if (v->cell[i]->type == LVAL_ERR) { return lval_take(v, i); }
   }
-
   /* Empty Expression */
   if (v->count == 0) { return v; }
-
   /* Single Expression */
   if (v->count == 1) { return lval_take(v, 0); }
-
-  /* Ensure First Element is Symbol */
+  /* Ensure first element is a function after evaluation */
   lval* f = lval_pop(v, 0);
-  if (f->type != LVAL_SYM) {
-    lval_del(f); lval_del(v);
-    return lval_err("S-expression Does not start with symbol.");
+  if (f->type != LVAL_FUN) {
+    lval_del(v); lval_del(f);
+    return lval_err("Unknown function!");
   }
-
-  /* Call builtin with operator */
-  lval* result = builtin(v, f->data.sym);
+  /* If so call function to get result */
+  lval* result = f->data.fun(e, v);
   lval_del(f);
   return result;
 }
 
-lval* lval_eval(lval* v) {
+lval* lval_eval(lenv* e, lval* v) {
   /* Evaluate Sexpressions */
-  if (v->type == LVAL_SEXPR) { return lval_eval_sexpr(v); }
+  if (v->type == LVAL_SYM) {
+    lval* x = lenv_get(e, v);
+    lval_del(v);
+    return x;
+  }
+  if (v->type == LVAL_SEXPR) { return lval_eval_sexpr(e, v); }
   /* All other lval types remain the same */
   return v;
 }
