@@ -15,7 +15,7 @@
 lval* lval_num_int(long);
 lval* lval_num_dec(double);
 lval* lval_fun(lbuiltin);
-lval* lval_err(char*);
+lval* lval_err(char*, ...);
 lval* lval_sym(char*);
 lval* lval_sexpr();
 lval* lval_qexpr();

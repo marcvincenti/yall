@@ -11,6 +11,9 @@
 
 #include "types.h"
 
+/* Functions */
+lval* builtin_def(lenv*, lval*);
+
 /* List */
 lval* builtin_list(lenv*, lval*);
 lval* builtin_eval(lenv*, lval*);

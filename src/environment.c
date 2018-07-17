@@ -62,6 +62,8 @@ void lenv_add_builtin(lenv* e, char* name, lbuiltin func) {
 }
 
 void lenv_add_default_builtins(lenv* e) {
+  lenv_add_builtin(e, "def", builtin_def);
+
   /* List Functions */
   lenv_add_builtin(e, "list", builtin_list);
   lenv_add_builtin(e, "eval", builtin_eval);
@@ -77,4 +79,5 @@ void lenv_add_default_builtins(lenv* e) {
   lenv_add_builtin(e, "/", builtin_div);
   lenv_add_builtin(e, "%", builtin_mod);
   lenv_add_builtin(e, "^", builtin_pow);
+
 }
